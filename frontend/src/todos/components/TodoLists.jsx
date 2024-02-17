@@ -1,4 +1,5 @@
-import React, { Fragment, useState, useEffect } from 'react'
+import React, { Fragment, useState, useEffect, useCallback } from 'react'
+import axios from 'axios'
 import {
   Card,
   CardContent,
@@ -11,63 +12,76 @@ import {
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { TodoListForm } from './TodoListForm'
 
-// Simulate network
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const fetchTodoLists = () => {
-  return sleep(1000).then(() =>
-    Promise.resolve({
-      '0000000001': {
-        id: '0000000001',
-        title: 'First List',
-        todos: ['First todo of first list!'],
-      },
-      '0000000002': {
-        id: '0000000002',
-        title: 'Second List',
-        todos: ['First todo of second list!'],
-      },
-    })
-  )
-}
+const apiClient = axios.create({
+  baseURL: 'http://localhost:3001',
+  timeout: 10000,
+})
 
 export const TodoLists = ({ style }) => {
-  const [todoLists, setTodoLists] = useState({})
+  const [todoLists, setTodoLists] = useState([])
   const [activeList, setActiveList] = useState()
 
-  useEffect(() => {
-    fetchTodoLists().then(setTodoLists)
+  useEffect(async () => {
+    try {
+      const { data } = await apiClient.get('/todo-lists')
+      setTodoLists(data)
+    } catch (error) {
+      console.error(error)
+    }
   }, [])
 
-  if (!Object.keys(todoLists).length) return null
+  const saveTodoList = useCallback(
+    async (id, { todos }) => {
+      setTodoLists([
+        ...todoLists.map((todoList) => {
+          if (todoList.id !== id) {
+            return todoList
+          }
+          return {
+            ...todoList,
+            todos,
+          }
+        }),
+      ])
+
+      try {
+        await apiClient.patch(`/todo-lists/${id}`, { todos })
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    [todoLists],
+  )
+
+  if (!todoLists.length) return null
+
   return (
     <Fragment>
       <Card style={style}>
         <CardContent>
           <Typography component='h2'>My Todo Lists</Typography>
           <List>
-            {Object.keys(todoLists).map((key) => (
-              <ListItemButton key={key} onClick={() => setActiveList(key)}>
-                <ListItemIcon>
-                  <ReceiptIcon />
-                </ListItemIcon>
-                <ListItemText primary={todoLists[key].title} />
-              </ListItemButton>
-            ))}
+            {todoLists.map((todoList) => {
+              const hasIncompleteTodos = todoList.todos.some((todo) => !todo.completed)
+
+              return (
+                <ListItemButton key={todoList.id} onClick={() => setActiveList(todoList)}>
+                  <ListItemIcon>
+                    <ReceiptIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={todoList.title} />
+                  Status: {hasIncompleteTodos ? 'incomplete todos' : 'all todos done'}
+                </ListItemButton>
+              )
+            })}
           </List>
         </CardContent>
       </Card>
-      {todoLists[activeList] && (
+      {activeList && (
         <TodoListForm
-          key={activeList} // use key to make React recreate component to reset internal state
-          todoList={todoLists[activeList]}
-          saveTodoList={(id, { todos }) => {
-            const listToUpdate = todoLists[id]
-            setTodoLists({
-              ...todoLists,
-              [id]: { ...listToUpdate, todos },
-            })
-          }}
+          key={activeList.id} // use key to make React recreate component to reset internal state
+          todoList={activeList}
+          saveTodoList={saveTodoList}
         />
       )}
     </Fragment>

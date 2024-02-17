@@ -1,0 +1,11 @@
+{
+  "name": "web-interview",
+  "version": "1.0.0",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.0.2"
+  }
+}
