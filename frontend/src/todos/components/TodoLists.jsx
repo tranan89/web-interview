@@ -21,7 +21,7 @@ export const TodoLists = ({ style }) => {
   const [todoLists, setTodoLists] = useState([])
   const [activeList, setActiveList] = useState()
 
-  useEffect(async () => {
+  const getList = useCallback(async () => {
     try {
       const { data } = await apiClient.get('/todo-lists')
       setTodoLists(data)
@@ -29,6 +29,10 @@ export const TodoLists = ({ style }) => {
       console.error(error)
     }
   }, [])
+
+  useEffect(() => {
+    getList()
+  }, [getList])
 
   const saveTodoList = useCallback(
     async (id, { todos }) => {

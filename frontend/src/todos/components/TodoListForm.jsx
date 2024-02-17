@@ -16,6 +16,7 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
   const [todos, setTodos] = useState(todoList.todos)
   const [editing, setEditing] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedUpdateTodoList = useCallback(
     debounce(async ({ id, todos }) => {
       await saveTodoList(id, { todos })
@@ -26,7 +27,7 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
 
   const updateTodoList = useCallback(() => {
     debouncedUpdateTodoList({ id: todoList.id, todos })
-  }, [todoList.id, todos])
+  }, [debouncedUpdateTodoList, todoList.id, todos])
 
   useEffect(() => {
     if (editing) {
